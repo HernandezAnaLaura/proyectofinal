@@ -1,14 +1,44 @@
 # proyectofinal
 PERIODO VACACIONAL 
-primero debemos hacer la ventana en donde se deban ingresarlos datos del trabajador (nombre), y crear un boton que diga "ver periodo vacacional" al presionar este boton se mostrara el periodo de vaciones que la empresa le asigno a este trabajador y en su registro de asistencias semostrar como vacaciones 
+import tkinter as tk
+from tkinter import messagebox
 
-//PASO A PASO//
-para comenzar los datos del trabajador deberan estar ingresados en un diccionario que ya tenga definido el periodo de vacaciones que le corresponde, ejemplo:
-vacaciones{
-    luis : "20/12-02/01"
-    maria : "14/08-28/08"
-    }
-entonces al hacer click en el boton debera mostrar el periodo "luis: 20/12-02-01"
+trabajadores = {
+    "Luis": {"vacaciones": "20/12-02/01", "asistencia": []},
+    "María": {"vacaciones": "14/08-28/08", "asistencia": []},
+    "Pedro": {"vacaciones": "01/06-15/06", "asistencia": []},
+    "Ana": {"vacaciones": "10/09-24/09", "asistencia": []},
+    "Carlos": {"vacaciones": "05/11-19/11", "asistencia": []}
+}
 
-mi idea es tener botones uno que muestre el periodo vacacional y otro que te permita resgistrar la asistencia al presionar el voton del periodo vacacional hara lo que eh escrito aqui y al presionarelotro boton podras registar tu asistencia 
-    
+def mostrar_vacaciones():
+    trabajador = entrada_nombre.get()
+    if trabajador in trabajadores:
+        periodo = trabajadores[trabajador]["vacaciones"]
+        messagebox.showinfo("Periodo Vacacional", f"{trabajador}: {periodo}")
+    else:
+        messagebox.showwarning("Trabajador no encontrado", "El trabajador no está registrado.")
+
+def registrar_asistencia():
+    trabajador = entrada_nombre.get()
+    if trabajador in trabajadores:
+        trabajadores[trabajador]["asistencia"].append("Presente")
+        messagebox.showinfo("Asistencia registrada", f"Asistencia de {trabajador} registrada.")
+    else:
+        messagebox.showwarning("Trabajador no encontrado", "El trabajador no está registrado."
+
+ventana = tk.Tk()
+ventana.title("Registro de Asistencia")
+
+etiqueta_nombre = tk.Label(ventana, text="Nombre del trabajador:")
+etiqueta_nombre.grid(row=0, column=0, padx=10, pady=10)
+entrada_nombre = tk.Entry(ventana)
+entrada_nombre.grid(row=0, column=1, padx=10, pady=10)
+
+boton_vacaciones = tk.Button(ventana, text="Ver periodo vacacional", command=mostrar_vacaciones)
+boton_vacaciones.grid(row=1, column=0, padx=10, pady=10)
+boton_asistencia = tk.Button(ventana, text="Registrar asistencia", command=registrar_asistencia)
+boton_asistencia.grid(row=1, column=1, padx=10, pady=10)
+
+
+ventana.mainloop()
