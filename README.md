@@ -1,4 +1,6 @@
 # proyectofinal
+aqui lo que hice fue combinar ambos codif¿gos ahora asi se pueden registrar retardos, asistencias, faltas y vvacaciones de los trabajadores del hospital en un mismo codigo c
+
 import tkinter as tk
 from tkinter import messagebox
 from datetime import datetime, time
