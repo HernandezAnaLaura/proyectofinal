@@ -1,5 +1,5 @@
 # proyectofinal
-Aqui ya añadi al codigo el menu de ocpiones color azul en donde las opciones son para registrar una asistencia registrar una falta, registrar un dia de vacaciones y en la ventana principal podemos ver el resumen de los datos y un cuadro para registrar tu hora de llegada y una lista de trabajadores para asi selccionar el nombre que coprresponda 
+Ahora tenemos una version en donde el resumen de los datos registrados ya no se muestra en la pantalla principal sino lo agregue al menu de opciones 
 
 import tkinter as tk
 from tkinter import messagebox
@@ -63,10 +63,15 @@ def registrar(tipo):
         messagebox.showinfo("Vacaciones", f"{nombre} está de vacaciones hoy.")
 
     entrada_hora.delete(0, tk.END)
-    actualizar_datos()
 
-def actualizar_datos():
-    texto_resultado.delete(1.0, tk.END)
+def mostrar_resumen():
+    ventana_resumen = tk.Toplevel()
+    ventana_resumen.title("Resumen de Asistencias")
+    ventana_resumen.geometry("500x400")
+
+    texto_resumen = tk.Text(ventana_resumen,  width=60)
+    texto_resumen.pack(padx=10, pady=10)
+
     for nombre, datos in asistencia_registro.items():
         puesto = trabajadores[nombre]
         resumen = (
@@ -76,20 +81,21 @@ def actualizar_datos():
             f"Retardos: {datos['Retardos']}, "
             f"Vacaciones: {datos['Vacaciones']}\n"
         )
-        texto_resultado.insert(tk.END, resumen)
+        texto_resumen.insert(tk.END, resumen)
 
 ventana = tk.Tk()
 ventana.title("Registro de Asistencias - Hospital")
-ventana.geometry("700x500")
+ventana.geometry("700x400")
 
 menu_frame = tk.Frame(ventana, width=200, bg="lightblue")
 menu_frame.pack(side=tk.LEFT, fill=tk.Y)
 
-tk.Label(menu_frame, text="Menú", font=("Arial", 14)).pack(pady=10)
+tk.Label(menu_frame, text="Menú", bg="#e0e0e0", font=("Arial", 14)).pack(pady=10)
 
 tk.Button(menu_frame, text="Registrar Asistencia", command=lambda: registrar("Asistencia"), width=20).pack(pady=5)
 tk.Button(menu_frame, text="Registrar Falta", command=lambda: registrar("Falta"), width=20).pack(pady=5)
 tk.Button(menu_frame, text="Registrar Vacaciones", command=lambda: registrar("Vacaciones"), width=20).pack(pady=5)
+tk.Button(menu_frame, text="Ver Resumen de Asistencias", command=mostrar_resumen, width=20).pack(pady=20)
 
 main_frame = tk.Frame(ventana)
 main_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10, pady=10)
@@ -103,12 +109,11 @@ tk.Label(main_frame, text="Hora de llegada (HH:MM):").pack()
 entrada_hora = tk.Entry(main_frame)
 entrada_hora.pack(pady=5)
 
-tk.Label(main_frame, text="Resumen general:").pack(pady=10)
-texto_resultado = tk.Text(main_frame, height=15, width=60)
-texto_resultado.pack()
-
-actualizar_datos()
-
 ventana.mainloop()
+
+
+
+         
+   
 
 
