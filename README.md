@@ -1,5 +1,5 @@
 # proyectofinal
-aqui lo que hice fue combinar ambos codif¿gos ahora asi se pueden registrar retardos, asistencias, faltas y vvacaciones de los trabajadores del hospital en un mismo codigo c
+Aqui ya añadi al codigo el menu de ocpiones color azul en donde las opciones son para registrar una asistencia registrar una falta, registrar un dia de vacaciones y en la ventana principal podemos ver el resumen de los datos y un cuadro para registrar tu hora de llegada y una lista de trabajadores para asi selccionar el nombre que coprresponda 
 
 import tkinter as tk
 from tkinter import messagebox
@@ -62,6 +62,7 @@ def registrar(tipo):
         asistencia_registro[nombre]["Vacaciones"] += 1
         messagebox.showinfo("Vacaciones", f"{nombre} está de vacaciones hoy.")
 
+    entrada_hora.delete(0, tk.END)
     actualizar_datos()
 
 def actualizar_datos():
@@ -79,29 +80,35 @@ def actualizar_datos():
 
 ventana = tk.Tk()
 ventana.title("Registro de Asistencias - Hospital")
-ventana.geometry("500x500")
+ventana.geometry("700x500")
 
-tk.Label(ventana, text="Selecciona un trabajador:").pack()
-lista_trabajadores = tk.StringVar(ventana)
+menu_frame = tk.Frame(ventana, width=200, bg="lightblue")
+menu_frame.pack(side=tk.LEFT, fill=tk.Y)
+
+tk.Label(menu_frame, text="Menú", font=("Arial", 14)).pack(pady=10)
+
+tk.Button(menu_frame, text="Registrar Asistencia", command=lambda: registrar("Asistencia"), width=20).pack(pady=5)
+tk.Button(menu_frame, text="Registrar Falta", command=lambda: registrar("Falta"), width=20).pack(pady=5)
+tk.Button(menu_frame, text="Registrar Vacaciones", command=lambda: registrar("Vacaciones"), width=20).pack(pady=5)
+
+main_frame = tk.Frame(ventana)
+main_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+tk.Label(main_frame, text="Selecciona un trabajador:").pack()
+lista_trabajadores = tk.StringVar()
 lista_trabajadores.set(list(trabajadores.keys())[0])
-tk.OptionMenu(ventana, lista_trabajadores, *trabajadores.keys()).pack(pady=5)
+tk.OptionMenu(main_frame, lista_trabajadores, *trabajadores.keys()).pack(pady=5)
 
-tk.Label(ventana, text="Hora de llegada (HH:MM):").pack()
-entrada_hora = tk.Entry(ventana)
+tk.Label(main_frame, text="Hora de llegada (HH:MM):").pack()
+entrada_hora = tk.Entry(main_frame)
 entrada_hora.pack(pady=5)
 
-tk.Button(ventana, text="Registrar Asistencia", command=lambda: registrar("Asistencia")).pack(pady=2)
-tk.Button(ventana, text="Registrar Retardo o Falta", command=lambda: registrar("Falta")).pack(pady=2)
-tk.Button(ventana, text="Registrar Vacaciones", command=lambda: registrar("Vacaciones")).pack(pady=2)
-
-tk.Label(ventana, text="Resumen general:").pack(pady=5)
-texto_resultado = tk.Text(ventana, height=15, width=60)
+tk.Label(main_frame, text="Resumen general:").pack(pady=10)
+texto_resultado = tk.Text(main_frame, height=15, width=60)
 texto_resultado.pack()
 
 actualizar_datos()
 
 ventana.mainloop()
-
-
 
 
