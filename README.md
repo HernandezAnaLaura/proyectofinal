@@ -1,121 +1,164 @@
-# proyectofinal
-AQUI AGREGUE UNA CLASE PADFRE Y UNA CLASE HIJA AL IGUAL QUE ASIGNE DIFERENTES HORARIOS DE ENTRADA PARA LOS TRABAJADORES EN SUS DIFERENTES TURNOS
+#proyecto final
+en esta nueva version del programa agregue que cada turno tenga diferente hora de entrada y salida al igual que ahora todo se muestre en la pantalla principal de acuerdo a la opcion seleccionada del menu de opciones 
+
 
 import tkinter as tk
 from tkinter import messagebox
 from datetime import datetime, time, timedelta
 
 class RegistroAsistencia:
-    hora_entrada_estandar = {
-        "Matutino": time(8, 0),
-        "Vespertino": time(15, 0),
-        "Nocturno": time(22, 0)
+    hora_est = {
+        "Matutino": time(8,0),
+        "Vespertino": time(15,0),
+        "Nocturno": time(22,0)
     }
-    max_tolerancia = 10
-    def __init__(self, nombre, puesto, turno):
-        self.nombre = nombre
-        self.puesto = puesto
-        self.turno = turno
-        self.asistencias = self.faltas = self.retardos = self.vacaciones = 0
+    tol = 10 
 
-    def procesar_llegada(self, hora_str):
-        try:
-            hora_llegada = datetime.strptime(hora_str, "%H:%M").time()
-        except ValueError:
-            raise ValueError("Formato de hora inválido. Usa HH:MM (24 h).")
+    def __init__(self, nombre, puesto, turno, tarifa):
+        self.nombre, self.puesto = nombre, puesto
+        self.turno, self.tarifa = turno, tarifa
+        self.asist = self.falt = self.ret = 0
 
-        std = self.hora_entrada_estandar[self.turno]
-        delta = (datetime.combine(datetime.today(), hora_llegada) -
-                 datetime.combine(datetime.today(), std))
-        minutos_tarde = delta.total_seconds() / 60
-
-        if minutos_tarde > self.max_tolerancia:
-            self.retardos += 1
-            return f"Retardo: llegó {int(minutos_tarde)} min tarde (entrada estándar {std})."
+    def registrar_asistencia(self, hora_str):
+        h = datetime.strptime(hora_str, "%H:%M")
+        std = datetime.combine(h.date(), self.hora_est[self.turno])
+        diff = (h - std).total_seconds() / 60
+        if diff > self.tol:
+            self.ret += 1
+            tipo = "Retardo"
         else:
-            self.asistencias += 1
-            return "Asistencia registrada correctamente."
+            self.asist += 1
+            tipo = "Asistencia"
+        return f"{tipo}: llegó {int(diff)} min (entrada {self.hora_est[self.turno]})"
 
     def registrar_falta(self):
-        self.faltas += 1
+        self.falt += 1
         return "Falta registrada."
 
-class AppGUI:
-    def __init__(self, master):
-        self.master = master
-        master.title("Registro Asistencias - Hospital")
-
-        trabajadores = {
-            "Luis": ("Recepcionista", "Matutino"),
-            "Maria": ("Doctora", "Vespertino"),
-            "Pedro": ("Camillero", "Nocturno"),
-            "Ana": ("Enfermera", "Matutino"),
-            "Carlos": ("Cirujano", "Vespertino")
+class App(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Registro Asistencias - Hospital")
+        self.geometry("800x450")
+        trabaj = {
+            "Luis":("Recepcionista","Matutino",50),
+            "Maria":("Doctora","Vespertino",120),
+            "Pedro":("Camillero","Nocturno",60),
+            "Ana":("Enfermera","Matutino",80),
+            "Carlos":("Cirujano","Vespertino",150),
         }
-        self.empleados = {
-            n: RegistroAsistencia(n, p, t) for n,(p,t) in trabajadores.items()
+        self.emps = {n:RegistroAsistencia(n,p,t,r) for n,(p,t,r) in trabaj.items()}
+        self.vac = {
+            "Luis":["2025-01-10"], "Maria":["2025-02-20"],
+            "Ana":[], "Pedro":[], "Carlos":["2025-05-12"]
         }
-        self.vac_previas = {
-            "Luis": ["2025-01-10", "2025-03-15"],
-            "Maria": ["2025-02-20"],
-            "Pedro": [], "Ana": ["2025-04-05"],
-            "Carlos": ["2025-05-12", "2025-05-13"]
-        }
+        self._setup_frames()
+        self.show_frame("Registro")
 
-        self.setup_ui()
+    def _setup_frames(self):
+        container = tk.Frame(self)
+        container.pack(fill="both", expand=True)
+        sidebar = tk.Frame(container, width=200, bg="blue")
+        sidebar.pack(side="left", fill="y")
+        self.main = tk.Frame(container, bg="white")
+        self.main.pack(side="right", fill="both", expand=True)
 
-    def setup_ui(self):
-        frame = tk.Frame(self.master)
-        frame.pack(padx=10, pady=10)
+        self.frames = {}
+        for name, cls in [
+            ("Vacaciones", VacacionesFrame),
+            ("Registro", RegistroFrame),
+            ("Asistencia", AsistenciaFrame),
+            ("Falta", FaltaFrame)
+        ]:
+            f = cls(self.main, self)
+            self.frames[name] = f
+            f.grid(row=0, column=0, sticky="nsew")
 
-        tk.Label(frame, text="Trabajador:").grid(row=0, column=0, sticky="w")
-        self.var_nombre = tk.StringVar(value=list(self.empleados.keys())[0])
-        tk.OptionMenu(frame, self.var_nombre, *self.empleados).grid(row=0, column=1)
+        for o in ["Vacaciones", "Registro", "Asistencia", "Falta"]:
+            tk.Button(
+                sidebar, text=o, fg="blue", bg="white", relief="flat",
+                command=lambda x=o: self.show_frame(x)
+            ).pack(fill="x", pady=5, padx=5)
+        tk.Button(sidebar, text="Salir", fg="blue", bg="white", relief="flat", command=self.quit
+        ).pack(fill="x", pady=20, padx=5)
 
-        tk.Label(frame, text="Hora de llegada (HH:MM):").grid(row=1, column=0, sticky="w")
-        self.entry_hora = tk.Entry(frame)
-        self.entry_hora.grid(row=1, column=1)
+    def show_frame(self, name):
+        f = self.frames[name]
+        f.tkraise()
+        if hasattr(f, "refresh"):
+            f.refresh()
 
-        tk.Button(frame, text="Registrar Asistencia", command=self.on_asistencia).grid(row=2, column=0, pady=5)
-        tk.Button(frame, text="Registrar Falta", command=self.on_falta).grid(row=2, column=1, pady=5)
-        tk.Button(frame, text="Resumen", command=self.mostrar_resumen).grid(row=3, column=0, columnspan=2, pady=5)
+class VacacionesFrame(tk.Frame):
+    def __init__(self, parent, app):
+        super().__init__(parent, bg="white")
+        self.app = app
+        tk.Label(self, text="Vacaciones previas:", font=("Arial",14), bg="white").pack(pady=10)
+        self.txt = tk.Text(self, width=50, height=15)
+        self.txt.pack(padx=10, pady=5)
 
-    def on_asistencia(self):
-        nombre = self.var_nombre.get()
-        hora = self.entry_hora.get().strip()
-        emp = self.empleados[nombre]
-        msg = ""
+    def refresh(self):
+        self.txt.delete("1.0","end")
+        for n, v in self.app.vac.items():
+            self.txt.insert("end", f"{n}: {', '.join(v) or '—'}\n")
+
+class RegistroFrame(tk.Frame):
+    def __init__(self, parent, app):
+        super().__init__(parent, bg="white")
+        self.app = app
+        tk.Label(self, text="Registro general de empleados", font=("Arial",14), bg="white").pack(pady=10)
+        self.txt = tk.Text(self, width=80, height=20)
+        self.txt.pack(padx=10, pady=5)
+
+    def refresh(self):
+        self.txt.delete("1.0","end")
+        for e in self.app.emps.values():
+            vac = ", ".join(self.app.vac.get(e.nombre, [])) or "—"
+            entrada = RegistroAsistencia.hora_est[e.turno]
+            salida = (datetime.combine(datetime.today(), entrada) + timedelta(hours=8)).time()
+            self.txt.insert(
+                "end",
+                (f"{e.nombre} ({e.puesto}, turno {e.turno}) → "
+                 f"Entrada: {entrada}, Salida: {salida} | "
+                 f"Asist: {e.asist}, Fal: {e.falt}, Ret: {e.ret}, Vac: {vac}\n")
+            )
+
+class AsistenciaFrame(tk.Frame):
+    def __init__(self, parent, app):
+        super().__init__(parent, bg="white")
+        self.app = app
+        tk.Label(self, text="Introduce hora de llegada (HH:MM):", font=("Arial",12), bg="white").pack(pady=10)
+        self.emp_var = tk.StringVar(value=list(app.emps.keys())[0])
+        tk.OptionMenu(self, self.emp_var, *app.emps).pack(pady=5)
+        self.entry_hora = tk.Entry(self, font=("Arial",12))
+        self.entry_hora.pack(pady=5)
+        tk.Button(self, text="Registrar Asistencia", command=self.on_registrar).pack(pady=5)
+
+    def on_registrar(self):
+        e = self.app.emps[self.emp_var.get()]
         try:
-            msg = emp.procesar_llegada(hora)
-        except ValueError as e:
-            messagebox.showerror("Error", str(e))
-            return
-        messagebox.showinfo("Asistencia", f"{nombre}: {msg}")
-        self.entry_hora.delete(0, tk.END)
+            msg = e.registrar_asistencia(self.entry_hora.get().strip())
+        except Exception as ex:
+            return messagebox.showerror("Error", ex)
+        messagebox.showinfo("Asistencia", f"{e.nombre}: {msg}")
+        self.entry_hora.delete(0, "end")
 
-    def on_falta(self):
-        nombre = self.var_nombre.get()
-        msg = self.empleados[nombre].registrar_falta()
-        messagebox.showinfo("Falta", f"{nombre}: {msg}")
+    def refresh(self): pass
 
-    def mostrar_resumen(self):
-        win = tk.Toplevel(self.master)
-        win.title("Resumen")
-        txt = tk.Text(win, width=60, height=20)
-        txt.pack(padx=10, pady=10)
-        for emp in self.empleados.values():
-            vac = self.vac_previas.get(emp.nombre, [])
-            line = (f"{emp.nombre} ({emp.puesto}, Turno {emp.turno}) → "
-                    f"Asist: {emp.asistencias}, Faltas: {emp.faltas}, Retardos: {emp.retardos}, "
-                    f"Vacac previas: {', '.join(vac) or 'Ninguna'}\n")
-            txt.insert(tk.END, line)
+class FaltaFrame(tk.Frame):
+    def __init__(self, parent, app):
+        super().__init__(parent, bg="white")
+        self.app = app
+        tk.Label(self, text="Registrar falta:", font=("Arial",12), bg="white").pack(pady=10)
+        self.emp_var = tk.StringVar(value=list(app.emps.keys())[0])
+        tk.OptionMenu(self, self.emp_var, *app.emps).pack(pady=5)
+        tk.Button(self, text="Registrar Falta", command=self.on_registrar).pack(pady=5)
+
+    def on_registrar(self):
+        e = self.app.emps[self.emp_var.get()]
+        msg = e.registrar_falta()
+        messagebox.showinfo("Falta", f"{e.nombre}: {msg}")
+
+    def refresh(self): pass
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    AppGUI(root)
-    root.mainloop()
-
-         
-   
-
-
+    App().mainloop()
