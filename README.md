@@ -1,18 +1,15 @@
 #proyecto final
-en esta nueva version del programa agregue que cada turno tenga diferente hora de entrada y salida al igual que ahora todo se muestre en la pantalla principal de acuerdo a la opcion seleccionada del menu de opciones 
-
-
 import tkinter as tk
-from tkinter import messagebox
-from datetime import datetime, time, timedelta
+from tkinter import ttk, messagebox
+from datetime import datetime, timedelta
 
 class RegistroAsistencia:
     hora_est = {
-        "Matutino": time(8,0),
-        "Vespertino": time(15,0),
-        "Nocturno": time(22,0)
+        "Matutino": timedelta(hours=8),
+        "Vespertino": timedelta(hours=15),
+        "Nocturno": timedelta(hours=22)
     }
-    tol = 10 
+    tol = 10  # tolerancia en minutos
 
     def __init__(self, nombre, puesto, turno, tarifa):
         self.nombre, self.puesto = nombre, puesto
@@ -21,7 +18,7 @@ class RegistroAsistencia:
 
     def registrar_asistencia(self, hora_str):
         h = datetime.strptime(hora_str, "%H:%M")
-        std = datetime.combine(h.date(), self.hora_est[self.turno])
+        std = datetime.combine(h.date(), datetime.min.time()) + self.hora_est[self.turno]
         diff = (h - std).total_seconds() / 60
         if diff > self.tol:
             self.ret += 1
@@ -29,7 +26,7 @@ class RegistroAsistencia:
         else:
             self.asist += 1
             tipo = "Asistencia"
-        return f"{tipo}: llegó {int(diff)} min (entrada {self.hora_est[self.turno]})"
+        return f"{tipo}: llegó {int(diff)} min (entrada {self.hora_est[self.turno]})"
 
     def registrar_falta(self):
         self.falt += 1
@@ -38,8 +35,8 @@ class RegistroAsistencia:
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Registro Asistencias - Hospital")
-        self.geometry("800x450")
+        self.title("Registro de Asistencias - Hospital General")
+        self.geometry("900x500")
         trabaj = {
             "Luis":("Recepcionista","Matutino",50),
             "Maria":("Doctora","Vespertino",120),
@@ -58,7 +55,7 @@ class App(tk.Tk):
     def _setup_frames(self):
         container = tk.Frame(self)
         container.pack(fill="both", expand=True)
-        sidebar = tk.Frame(container, width=200, bg="blue")
+        sidebar = tk.Frame(container, width=200, bg="#ADD8E6")  # Azul claro
         sidebar.pack(side="left", fill="y")
         self.main = tk.Frame(container, bg="white")
         self.main.pack(side="right", fill="both", expand=True)
@@ -68,25 +65,44 @@ class App(tk.Tk):
             ("Vacaciones", VacacionesFrame),
             ("Registro", RegistroFrame),
             ("Asistencia", AsistenciaFrame),
-            ("Falta", FaltaFrame)
+            ("Falta", FaltaFrame),
+            ("Turnos", TurnosFrame)  # Nueva opción añadida
         ]:
             f = cls(self.main, self)
             self.frames[name] = f
             f.grid(row=0, column=0, sticky="nsew")
 
-        for o in ["Vacaciones", "Registro", "Asistencia", "Falta"]:
+        for o in ["Vacaciones", "Registro", "Asistencia", "Falta", "Turnos"]:  # Incluyendo "Turnos"
             tk.Button(
-                sidebar, text=o, fg="blue", bg="white", relief="flat",
-                command=lambda x=o: self.show_frame(x)
+                sidebar, text=o, fg="black", bg="white", relief="flat",
+                font=("Arial", 12), command=lambda x=o: self.show_frame(x)
             ).pack(fill="x", pady=5, padx=5)
-        tk.Button(sidebar, text="Salir", fg="blue", bg="white", relief="flat", command=self.quit
-        ).pack(fill="x", pady=20, padx=5)
+        tk.Button(sidebar, text="Salir", fg="black", bg="white", relief="flat", command=self.quit,
+                  font=("Arial", 12)).pack(fill="x", pady=20, padx=5)
 
     def show_frame(self, name):
         f = self.frames[name]
         f.tkraise()
         if hasattr(f, "refresh"):
             f.refresh()
+
+class TurnosFrame(tk.Frame):
+    def __init__(self, parent, app):
+        super().__init__(parent, bg="white")
+        self.app = app
+        tk.Label(self, text="Horarios de Turnos", font=("Arial", 14), bg="white").pack(pady=10)
+        self.tree = ttk.Treeview(self, columns=("Turno", "Entrada", "Salida"))
+        self.tree.heading("#0", text="Turno")
+        for col in self.tree["columns"]:
+            self.tree.heading(col, text=col)
+        self.tree.pack(padx=10, pady=5, fill="both", expand=True)
+
+    def refresh(self):
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        for turno, hora_entrada in self.app.emps["Luis"].hora_est.items():
+            hora_salida = (datetime.combine(datetime.today(), datetime.min.time()) + hora_entrada + timedelta(hours=8)).strftime("%H:%M")
+            self.tree.insert("", "end", text=turno, values=(hora_entrada, hora_salida))
 
 class VacacionesFrame(tk.Frame):
     def __init__(self, parent, app):
@@ -106,32 +122,40 @@ class RegistroFrame(tk.Frame):
         super().__init__(parent, bg="white")
         self.app = app
         tk.Label(self, text="Registro general de empleados", font=("Arial",14), bg="white").pack(pady=10)
-        self.txt = tk.Text(self, width=80, height=20)
-        self.txt.pack(padx=10, pady=5)
+        self.tree = ttk.Treeview(self, columns=("Puesto", "Turno", "Asistencias", "Faltas", "Retardos"))
+        self.tree.heading("#0", text="Nombre")
+        for col in self.tree["columns"]:
+            self.tree.heading(col, text=col)
+        self.tree.pack(padx=10, pady=5, fill="both", expand=True)
 
     def refresh(self):
-        self.txt.delete("1.0","end")
+        for item in self.tree.get_children():
+            self.tree.delete(item)
         for e in self.app.emps.values():
-            vac = ", ".join(self.app.vac.get(e.nombre, [])) or "—"
-            entrada = RegistroAsistencia.hora_est[e.turno]
-            salida = (datetime.combine(datetime.today(), entrada) + timedelta(hours=8)).time()
-            self.txt.insert(
-                "end",
-                (f"{e.nombre} ({e.puesto}, turno {e.turno}) → "
-                 f"Entrada: {entrada}, Salida: {salida} | "
-                 f"Asist: {e.asist}, Fal: {e.falt}, Ret: {e.ret}, Vac: {vac}\n")
-            )
+            self.tree.insert("", "end", text=e.nombre, values=(e.puesto, e.turno, e.asist, e.falt, e.ret))
 
 class AsistenciaFrame(tk.Frame):
     def __init__(self, parent, app):
         super().__init__(parent, bg="white")
         self.app = app
-        tk.Label(self, text="Introduce hora de llegada (HH:MM):", font=("Arial",12), bg="white").pack(pady=10)
+        tk.Label(self, text="Registrar asistencia", font=("Arial",12), bg="white").pack(pady=10)
         self.emp_var = tk.StringVar(value=list(app.emps.keys())[0])
-        tk.OptionMenu(self, self.emp_var, *app.emps).pack(pady=5)
+        self.emp_menu = tk.OptionMenu(self, self.emp_var, *app.emps)
+        self.emp_menu.pack(pady=5)
         self.entry_hora = tk.Entry(self, font=("Arial",12))
         self.entry_hora.pack(pady=5)
+        self.info_label = tk.Label(self, text="", font=("Arial",10), bg="white")
+        self.info_label.pack(pady=5)
         tk.Button(self, text="Registrar Asistencia", command=self.on_registrar).pack(pady=5)
+
+        self.emp_var.trace("w", self.actualizar_info_turno)
+
+    def actualizar_info_turno(self, *args):
+        emp = self.app.emps[self.emp_var.get()]
+        turno = emp.turno
+        entrada = self.app.emps[self.emp_var.get()].hora_est[turno]
+        salida = (datetime.combine(datetime.today(), datetime.min.time()) + entrada + timedelta(hours=8)).strftime("%H:%M")
+        self.info_label.config(text=f"Turno: {turno} - Entrada: {entrada} - Salida: {salida}")
 
     def on_registrar(self):
         e = self.app.emps[self.emp_var.get()]
@@ -162,3 +186,4 @@ class FaltaFrame(tk.Frame):
 
 if __name__ == "__main__":
     App().mainloop()
+
